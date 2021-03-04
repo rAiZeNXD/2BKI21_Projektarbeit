@@ -78,7 +78,8 @@ void steuerung()
   
   i = 0;
   dataRecieved = ""; 
-
+  
+  // Bug
   switch (modus)
   {
     case debug: // Debug Steuerung
@@ -122,7 +123,7 @@ void steuerung()
       { 
         digitalWrite(V4, LOW);
         Serial.println("DEBUG (Zustand): 4 closed");
-      } 
+      }
     break;
 
     case manual: // Manuelle Steuerung
