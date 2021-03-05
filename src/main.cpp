@@ -19,8 +19,9 @@ char dataSent[30];
 int i = 0;
 
 // Enum für Betriebmodus
-enum Betriebmodus { start, debug, manual, automatic };
-Betriebmodus modus;
+//enum Betriebmodus { start, debug, manual, automatic };
+//Betriebmodus modus;
+int state;
 
 enum Zustaende { open, closed };
 Zustaende stateV1, stateV2, stateV3, stateV4;
@@ -33,6 +34,7 @@ long timeNow, timePrev;
 
 // Funktionsprototypen (Notwendig in PlatformIO)
 void steuerung(void);
+void states(void);
 
 void setup() 
 {
@@ -42,12 +44,12 @@ void setup()
   pinMode(V4, INPUT);
   delay(750);
   Serial.begin(115200);
-  modus = start;
 }
 
 void loop() 
 {
     steuerung();
+    states();
     delay(500);
 }
 
@@ -62,9 +64,9 @@ void steuerung()
   dataRecieved = dataSent;
   //Serial.println("DEBUG (dataRecoeved): " + dataRecieved);    Gibt ein String aus was über die Serielle Schnitstelle empafngen wurde (Debug)
 
-  if (dataRecieved == "debug") { modus = debug; }
-  else if (dataRecieved == "manual") { modus = manual; }
-  else if (dataRecieved == "automatic") { modus = automatic; }
+  if (dataRecieved == "debug") { state = 1; }
+  else if (dataRecieved == "manual") { state = 2; }
+  else if (dataRecieved == "automatic") { state = 3; }
 
   // Befehle für Debug Steuerung
   else if (dataRecieved == "1 open") { stateV1 = open; }
@@ -80,11 +82,16 @@ void steuerung()
   dataRecieved = ""; 
   
   // Bug
-  switch (modus)
+  
+}
+
+void states()
+{
+  switch (state)
   {
-    case debug: // Debug Steuerung
+    case 1: // Debug Steuerung
       Serial.println("debug");
-      if (stateV1 == open) 
+      /*if (stateV1 == open) 
       { 
         digitalWrite(V1, HIGH); 
         Serial.println("DEBUG (Zustand): 1 open");
@@ -123,15 +130,15 @@ void steuerung()
       { 
         digitalWrite(V4, LOW);
         Serial.println("DEBUG (Zustand): 4 closed");
-      }
+      }*/
     break;
 
-    case manual: // Manuelle Steuerung
+    case 2: // Manuelle Steuerung
       Serial.println("manual");
-     
+    
     break;
 
-    case automatic: // Automatische Steuerung
+    case 3: // Automatische Steuerung
       Serial.println("auto");
     
     break;
