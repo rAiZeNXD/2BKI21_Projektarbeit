@@ -12,86 +12,104 @@
 // Ventil 1 am Pin 19
 #define V1 19
 
-// CharArray für 
+// CharArray weil per Serielle Schnittstelle werden nur einzelne Zeichen gesendet die dann in String konvertiert werde
 char dataSent[30];
 
 // Index für die while-Schleife in der checkSerial() Funktion
 int i = 0;
 
 // Enum für Betriebmodus
-//enum Betriebmodus { start, debug, manual, automatic };
-//Betriebmodus modus;
-int state;
+enum Betriebmodus { stop, debug, manual, automatic };
+Betriebmodus modus;
 
 enum Zustaende { open, closed };
 Zustaende stateV1, stateV2, stateV3, stateV4;
 
-// 
+// Hier werden empfangene Befehle gespeichert
 String dataRecieved;
 
 // 
 long timeNow, timePrev;
 
 // Funktionsprototypen (Notwendig in PlatformIO)
+void serialCheck(void);
 void steuerung(void);
-void states(void);
 
 void setup() 
 {
+  modus = stop;
   pinMode(V1, INPUT);
   pinMode(V2, INPUT);
   pinMode(V3, INPUT);
   pinMode(V4, INPUT);
+  stateV1 = closed;
+  stateV2 = closed;
+  stateV3 = closed;
+  stateV4 = closed;
   delay(750);
   Serial.begin(115200);
 }
 
 void loop() 
 {
-    steuerung();
-    states();
-    delay(500);
+  serialCheck();
+  steuerung();
+  delay(500);
 }
 
 /* Diese Funktion überprüft ob etwas über die Serielle Schnitstelle gesendet wurde
 #  Wenn ja, dann speichert es die einzele Bits in CharArray und dann umwandelt CharArray in String um */ 
-void steuerung()
+void serialCheck()
 {
   while (Serial.available() > 0 && Serial.available() < 30)
-  {
     dataSent[i++] = Serial.read();
-  }
+
+  // dataSent[i-1] = '\0'; Arduino Serielle Schnittstelle
+  dataSent[i] = '\0';   // hterm Serielle Schnittstelle 
   dataRecieved = dataSent;
   //Serial.println("DEBUG (dataRecoeved): " + dataRecieved);    Gibt ein String aus was über die Serielle Schnitstelle empafngen wurde (Debug)
 
-  if (dataRecieved == "debug") { state = 1; }
-  else if (dataRecieved == "manual") { state = 2; }
-  else if (dataRecieved == "automatic") { state = 3; }
+  if (dataRecieved == "debug")
+    modus = debug;
+  else if (dataRecieved == "manual") 
+    modus = manual;
+  else if (dataRecieved == "automatic")
+    modus = automatic;
+  else if (dataRecieved == "stop")
+    modus = stop;  
 
   // Befehle für Debug Steuerung
-  else if (dataRecieved == "1 open") { stateV1 = open; }
-  else if (dataRecieved == "1 close") { stateV1 = closed; }
-  else if (dataRecieved == "2 open") { stateV2 = open; }
-  else if (dataRecieved == "2 close") { stateV2 = closed; }
-  else if (dataRecieved == "3 open") { stateV3 = open; }
-  else if (dataRecieved == "3 close") { stateV3 = closed; }
-  else if (dataRecieved == "4 open") { stateV4 = open; }
-  else if (dataRecieved == "4 close") { stateV1 = closed; }
+  else if (dataRecieved == "1 open" && modus == debug)
+    stateV1 = open;
+  else if (dataRecieved == "1 close" && modus == debug)
+    stateV1 = closed;
+  else if (dataRecieved == "2 open" && modus == debug)
+    stateV2 = open;
+  else if (dataRecieved == "2 close" && modus == debug)
+    stateV2 = closed;
+  else if (dataRecieved == "3 open" && modus == debug)
+    stateV3 = open;
+  else if (dataRecieved == "3 close" && modus == debug)
+    stateV3 = closed;
+  else if (dataRecieved == "4 open" && modus == debug)
+    stateV4 = open;
+  else if (dataRecieved == "4 close" && modus == debug) 
+    stateV1 = closed;
+
+  // Befehle für automatische Steuerung
   
   i = 0;
-  dataRecieved = ""; 
-  
-  // Bug
-  
+  dataRecieved = "";
 }
 
-void states()
+void steuerung()
 {
-  switch (state)
+  switch (modus)
   {
-    case 1: // Debug Steuerung
+    case debug: // Einzelne Ventile können angesteurert werden
       Serial.println("debug");
-      /*if (stateV1 == open) 
+
+      if (stateV1 == open) 
       { 
         digitalWrite(V1, HIGH); 
         Serial.println("DEBUG (Zustand): 1 open");
@@ -130,20 +148,32 @@ void states()
       { 
         digitalWrite(V4, LOW);
         Serial.println("DEBUG (Zustand): 4 closed");
-      }*/
+      }
     break;
 
-    case 2: // Manuelle Steuerung
+    case manual: // Manuelle Steuerung
       Serial.println("manual");
     
     break;
 
-    case 3: // Automatische Steuerung
+    case automatic: // Automatische Steuerung
       Serial.println("auto");
     
     break;
 
+    case stop: // Schließt alle Ventile
+      digitalWrite(V1, LOW);
+      digitalWrite(V2, LOW);
+      digitalWrite(V3, LOW);
+      digitalWrite(V4, LOW);
+    break;
+
     default:
+      digitalWrite(V1, LOW);
+      digitalWrite(V2, LOW);
+      digitalWrite(V3, LOW);
+      digitalWrite(V4, LOW);
+      Serial.println("Fehler! Ungültiger Zustand. Alle Ventile wurden geschlossen.");
     break;
   }
 }
